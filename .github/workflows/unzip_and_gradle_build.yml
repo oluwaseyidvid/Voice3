@@ -23,11 +23,12 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Gradle 8.4 manually
+      - name: Download and Extract Gradle 8.4
         run: |
           wget https://services.gradle.org/distributions/gradle-8.4-bin.zip
-          unzip gradle-8.4-bin.zip -d /usr/local/gradle
-          echo "export PATH=/usr/local/gradle/gradle-8.4/bin:$PATH" >> $GITHUB_ENV
+          mkdir -p $HOME/gradle
+          unzip -q gradle-8.4-bin.zip -d $HOME/gradle
+          echo "$HOME/gradle/gradle-8.4/bin" >> $GITHUB_PATH
           gradle -v
 
       - name: Build APK
