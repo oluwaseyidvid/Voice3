@@ -1,4 +1,4 @@
-name: Build Voice CRM Chat APK (No Cache)
+name: Reliable Gradle Build (Voice CRM Chat APK)
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unzip uploaded project
+      - name: Unzip project if zipped
         run: |
           if [ -f voice_crm_chat_project_v3.zip ]; then unzip -o voice_crm_chat_project_v3.zip -d voice_crm_chat_project_v3; fi
 
@@ -23,16 +23,22 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Gradle manually (no cache)
+      - name: Download Gradle Wrapper (latest)
         run: |
-          sudo apt-get update -y
-          sudo apt-get install gradle -y
-          gradle -v
+          cd voice_crm_chat_project_v3
+          gradle_version="8.5"
+          mkdir -p gradle/wrapper
+          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
+          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
+          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-${gradle_version}-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+          wget https://services.gradle.org/distributions/gradle-${gradle_version}-bin.zip -O gradle-${gradle_version}-bin.zip
 
-      - name: Build APK
+      - name: Build APK using Gradle Wrapper
         run: |
-          cd voice_crm_chat_project_v3/app
-          gradle assembleDebug --no-daemon
+          cd voice_crm_chat_project_v3
+          ./gradlew assembleDebug --no-daemon || gradle assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
