@@ -1,4 +1,4 @@
-name: Unzip, Install Gradle, and Build Voice CRM Chat APK
+name: Build Voice CRM Chat APK (No Cache)
 
 on:
   push:
@@ -13,22 +13,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unzip uploaded project if present
+      - name: Unzip uploaded project
         run: |
           if [ -f voice_crm_chat_project_v3.zip ]; then unzip -o voice_crm_chat_project_v3.zip -d voice_crm_chat_project_v3; fi
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Build debug APK
+      - name: Install Gradle manually (no cache)
         run: |
-          if [ -d voice_crm_chat_project_v3 ]; then cd voice_crm_chat_project_v3/app; else cd app; fi
+          sudo apt-get update -y
+          sudo apt-get install gradle -y
+          gradle -v
+
+      - name: Build APK
+        run: |
+          cd voice_crm_chat_project_v3/app
           gradle assembleDebug --no-daemon
 
       - name: Upload APK Artifact
