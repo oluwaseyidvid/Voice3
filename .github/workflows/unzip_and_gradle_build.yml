@@ -1,4 +1,4 @@
-name: Reliable Gradle Build (Voice CRM Chat APK)
+name: Stable Gradle 8.4 Build (Voice CRM Chat APK)
 
 on:
   push:
@@ -23,22 +23,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download Gradle Wrapper (latest)
+      - name: Install Gradle 8.4 manually
         run: |
-          cd voice_crm_chat_project_v3
-          gradle_version="8.5"
-          mkdir -p gradle/wrapper
-          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
-          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-${gradle_version}-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
-          wget https://services.gradle.org/distributions/gradle-${gradle_version}-bin.zip -O gradle-${gradle_version}-bin.zip
+          wget https://services.gradle.org/distributions/gradle-8.4-bin.zip
+          unzip gradle-8.4-bin.zip -d /usr/local/gradle
+          echo "export PATH=/usr/local/gradle/gradle-8.4/bin:$PATH" >> $GITHUB_ENV
+          gradle -v
 
-      - name: Build APK using Gradle Wrapper
+      - name: Build APK
         run: |
-          cd voice_crm_chat_project_v3
-          ./gradlew assembleDebug --no-daemon || gradle assembleDebug --no-daemon
+          cd voice_crm_chat_project_v3/app
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
