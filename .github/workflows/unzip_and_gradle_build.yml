@@ -1,4 +1,4 @@
-name: Voice CRM Chat – Hardened Build (Final v2)
+name: Voice CRM Chat – Final Stable Build
 
 on:
   push:
@@ -30,43 +30,36 @@ jobs:
           unzip -q gradle-8.4-bin.zip -d $HOME/gradle
           echo "$HOME/gradle/gradle-8.4/bin" >> $GITHUB_PATH
 
-      - name: Enable AndroidX and Kotlin
+      - name: Enable AndroidX
         run: |
           echo "android.useAndroidX=true" >> voice_crm_chat_project_v3/gradle.properties
           echo "android.enableJetifier=true" >> voice_crm_chat_project_v3/gradle.properties
-          echo "kotlin.code.style=official" >> voice_crm_chat_project_v3/gradle.properties
 
       - name: Install ImageMagick (for PNG icons)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y imagemagick
+        run: sudo apt-get update -y && sudo apt-get install -y imagemagick
 
-      - name: Ensure launcher icons exist
+      - name: Create adaptive launcher icon (XML only)
         run: |
-          for dir in anydpi-v26 hdpi mdpi xhdpi xxhdpi xxxhdpi; do
-            mkdir -p voice_crm_chat_project_v3/app/src/main/res/mipmap-$dir
-            convert -size 1x1 xc:"#00B3B3" voice_crm_chat_project_v3/app/src/main/res/mipmap-$dir/ic_launcher.png
-          done
+          mkdir -p voice_crm_chat_project_v3/app/src/main/res/mipmap-anydpi-v26
           echo '<?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
               <background android:drawable="@color/teal_200"/>
               <foreground android:drawable="@drawable/ic_mic"/>
           </adaptive-icon>' > voice_crm_chat_project_v3/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 
-      - name: Patch Gradle files for stability
+      - name: Generate placeholder PNG icons (renamed)
         run: |
-          # Force Gradle plugin + Kotlin versions
-          sed -i 's/com.android.tools.build:gradle:.*/com.android.tools.build:gradle:8.1.1"/' voice_crm_chat_project_v3/build.gradle || true
-          sed -i 's/org.jetbrains.kotlin:kotlin-gradle-plugin:.*/org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.10"/' voice_crm_chat_project_v3/build.gradle || true
-          # Add multidex flag to app-level Gradle if missing
-          grep -q "multiDexEnabled true" voice_crm_chat_project_v3/app/build.gradle || echo "android { defaultConfig { multiDexEnabled true } }" >> voice_crm_chat_project_v3/app/build.gradle
+          for dir in hdpi mdpi xhdpi xxhdpi xxxhdpi; do
+            mkdir -p voice_crm_chat_project_v3/app/src/main/res/mipmap-$dir
+            convert -size 1x1 xc:"#00B3B3" voice_crm_chat_project_v3/app/src/main/res/mipmap-$dir/ic_launcher_placeholder.png
+          done
 
       - name: Build APK
         run: |
           cd voice_crm_chat_project_v3/app
-          gradle assembleDebug --no-daemon --stacktrace --warning-mode=all
+          gradle assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: VoiceCRMChat-debug
