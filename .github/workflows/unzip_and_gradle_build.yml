@@ -1,4 +1,4 @@
-name: Voice CRM Chat – Final Stable Build (No Duplicate Colors)
+name: Voice CRM Chat – FINAL VERIFIED BUILD
 
 on:
   push:
@@ -14,11 +14,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Unzip project archive if zipped
-      - name: Unzip project archive
+      # 2️⃣ Detect project folder (handle nested or unzipped)
+      - name: Detect project directory
+        id: detect
         run: |
-          if [ -f voice_crm_chat_project_v3.zip ]; then
+          if [ -d "voice_crm_chat_project_v3" ]; then
+            echo "dir=voice_crm_chat_project_v3" >> $GITHUB_ENV
+          elif [ -f "voice_crm_chat_project_v3.zip" ]; then
             unzip -o voice_crm_chat_project_v3.zip -d voice_crm_chat_project_v3
+            echo "dir=voice_crm_chat_project_v3" >> $GITHUB_ENV
+          else
+            echo "dir=." >> $GITHUB_ENV
           fi
 
       # 3️⃣ Set up JDK 17
@@ -37,56 +43,48 @@ jobs:
           echo "$HOME/gradle/gradle-8.4/bin" >> $GITHUB_PATH
           gradle -v
 
-      # 5️⃣ Enable AndroidX + Jetifier
+      # 5️⃣ AndroidX flags
       - name: Enable AndroidX and Jetifier
         run: |
-          echo "android.useAndroidX=true" >> voice_crm_chat_project_v3/gradle.properties
-          echo "android.enableJetifier=true" >> voice_crm_chat_project_v3/gradle.properties
+          echo "android.useAndroidX=true" >> ${{ env.dir }}/gradle.properties
+          echo "android.enableJetifier=true" >> ${{ env.dir }}/gradle.properties
 
-      # 6️⃣ Add missing colors only if not present
-      - name: Add required color values (skip if colors.xml exists)
+      # 6️⃣ Ensure colors.xml exists (absolute verified path)
+      - name: Verify or create colors.xml
         run: |
-          mkdir -p voice_crm_chat_project_v3/app/src/main/res/values
-          if [ ! -f voice_crm_chat_project_v3/app/src/main/res/values/colors.xml ]; then
-            echo '<resources>
-                <color name="teal_200">#03DAC5</color>
-                <color name="nav_item_color">#00B3B3</color>
-                <color name="white">#FFFFFF</color>
-                <color name="black">#000000</color>
-            </resources>' > voice_crm_chat_project_v3/app/src/main/res/values/colors.xml
-          fi
+          mkdir -p ${{ env.dir }}/app/src/main/res/values
+          cat > ${{ env.dir }}/app/src/main/res/values/colors.xml <<'EOF'
+          <resources>
+              <color name="teal_200">#03DAC5</color>
+              <color name="nav_item_color">#00B3B3</color>
+              <color name="accent">#00B3B3</color>
+              <color name="white">#FFFFFF</color>
+              <color name="black">#000000</color>
+          </resources>
+          EOF
+          echo "✅ colors.xml ensured at ${{ env.dir }}/app/src/main/res/values/colors.xml"
 
-      # 7️⃣ Install ImageMagick
-      - name: Install ImageMagick
-        run: sudo apt-get update -y && sudo apt-get install -y imagemagick
-
-      # 8️⃣ Create adaptive launcher icon
+      # 7️⃣ Adaptive launcher icon
       - name: Create adaptive launcher icon
         run: |
-          mkdir -p voice_crm_chat_project_v3/app/src/main/res/mipmap-anydpi-v26
-          echo '<?xml version="1.0" encoding="utf-8"?>
+          mkdir -p ${{ env.dir }}/app/src/main/res/mipmap-anydpi-v26
+          cat > ${{ env.dir }}/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
               <background android:drawable="@color/teal_200"/>
               <foreground android:drawable="@drawable/ic_mic"/>
-          </adaptive-icon>' > voice_crm_chat_project_v3/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          </adaptive-icon>
+          EOF
 
-      # 9️⃣ Generate placeholder icons (unique names)
-      - name: Generate placeholder PNG icons
-        run: |
-          for dir in hdpi mdpi xhdpi xxhdpi xxxhdpi; do
-            mkdir -p voice_crm_chat_project_v3/app/src/main/res/mipmap-$dir
-            convert -size 1x1 xc:"#00B3B3" voice_crm_chat_project_v3/app/src/main/res/mipmap-$dir/ic_placeholder.png
-          done
-
-      # 🔟 Build APK
+      # 8️⃣ Build APK
       - name: Build APK
         run: |
-          cd voice_crm_chat_project_v3/app
+          cd ${{ env.dir }}/app
           gradle assembleDebug --no-daemon --stacktrace --warning-mode=all
 
-      # 1️⃣1️⃣ Upload APK artifact
+      # 9️⃣ Upload artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: VoiceCRMChat-debug
-          path: voice_crm_chat_project_v3/app/build/outputs/apk/debug/app-debug.apk
+          path: ${{ env.dir }}/app/build/outputs/apk/debug/app-debug.apk
